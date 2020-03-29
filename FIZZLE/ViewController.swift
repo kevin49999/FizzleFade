@@ -12,7 +12,8 @@ import UIKit
 
 class ViewController: UIViewController {
 
-    var rndValue: UInt32!
+    let fizzledPixelsPerFrame: Int = 300
+    var rndValue: UInt32 = 1
     var buffer: [Color] = .init(repeating: .black, count: 64_000)
     var timer: Timer!
 
@@ -20,24 +21,33 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        renderFrame()
 
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
-            if self.rndValue == 1 {
-                self.timer.invalidate() // done fizzling
+        renderFrame() // initially all black
+        fizzleFade()
+    }
+
+    func fizzleFade() {
+        let endFizzledFrames = 64_000 / fizzledPixelsPerFrame
+        var fizzledFrames = 0
+
+        func runLoop() {
+            if fizzledFrames == endFizzledFrames {
+                self.timer.invalidate()
                 return
             }
-            self.fizzleFade(fizzledPixelsPerFrame: 300)
+            self.fizzleFrame()
             self.renderFrame()
+            fizzledFrames += 1
+        }
+
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
+            runLoop()
         }
     }
 
-    func fizzleFade(fizzledPixelsPerFrame: Int) {
+    func fizzleFrame() {
         var fizzled = 0
-
-        while rndValue != 1 && fizzled <= fizzledPixelsPerFrame {
-            if rndValue == nil { rndValue = 1 }
-
+        repeat {
             let y = UInt16(rndValue & 0x000FF)
             let x = UInt16(UInt32(rndValue & 0x1FF00) >> 8)
             let lsb: UInt32 = rndValue & 1
@@ -49,7 +59,7 @@ class ViewController: UIViewController {
                 fizzlePixel(x: x, y: y)
                 fizzled += 1
             }
-        }
+        } while rndValue != 1 && fizzled <= fizzledPixelsPerFrame
     }
 
     func fizzlePixel(x: UInt16, y: UInt16, with color: Color = .red) {
